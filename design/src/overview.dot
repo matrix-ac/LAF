@@ -1,0 +1,29 @@
+digraph G {
+
+	subgraph cluster_0 {
+		style=filled;
+		color=lightgrey;
+		node [style=filled,color=white];
+		netfilter -> module -> action;
+		label = "Kernel";
+	}
+
+	subgraph cluster_1 {
+		node [style=filled];
+		alert -> input;
+		application;
+		label = "User Space";
+		color=green;
+	}
+
+	dbus [shape=box];
+
+	module -> dbus;
+	dbus -> alert;
+	input -> dbus;
+	dbus -> module;
+
+	application -> netfilter;
+	action -> network;
+
+}
