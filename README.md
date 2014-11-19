@@ -35,3 +35,4 @@ P = Procs Method
 - [Tomoyo](http://tomoyo.sourceforge.jp/2.5/policy-specification/domain-policy-syntax.html.en#network_inet) inet options.
 - [caitsith](http://caitsith.sourceforge.jp/) Access restriction module.
 - [libseccomp](http://sourceforge.net/projects/libseccomp/) Syscall filtering lib.
+- [kernsec](http://kernsec.org/wiki/index.php/Projects)
