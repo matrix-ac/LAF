@@ -6,6 +6,11 @@
 #include <linux/netfilter.h>            /* for NF_ACCEPT */
 #include <arpa/inet.h>                  /* for inet_ntop(), inet_pton() */
 #include <string.h>                     /* for memcpy(), strcmp() etc. */
+#include <sys/socket.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/types.h>
 
 #include <libnetfilter_queue/libnetfilter_queue.h>
 
@@ -175,7 +180,10 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
 
         /* print source and destination IP addresses */
         printf("[>] From: %s\n", inet_ntoa(ip->ip_src));
-        printf("[>] To: %s\n", inet_ntoa(ip->ip_dst));
+        printf("[>] To: %s ", inet_ntoa(ip->ip_dst));
+       // struct in_addr ipv4addr;
+       // inet_pton(AF_INET, inet_ntoa(ip->ip_dst), &ipv4addr);
+        //printf("(%s)\n", gethostbyaddr(&ipv4addr, sizeof(ipv4addr), AF_INET)->h_name);
 
         /* determine protocol */    
         switch(ip->ip_p) {
@@ -273,6 +281,8 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
     struct laf_entry entry = {};
     u_int32_t id = process_pkt(nfa, &entry);
     int verdict = check_whitelist(&entry);
+    free(entry.ip_src);
+    free(entry.ip_dst);
     return nfq_set_verdict(qh, id, verdict, 0, NULL);
 }
 
