@@ -9,6 +9,8 @@
 
 #include <libnetfilter_queue/libnetfilter_queue.h>
 
+#include "procs.c"
+
 /* IP header */
 struct sniff_ip {
     u_char  ip_vhl;                 /* version << 4 | header length >> 2 */
@@ -153,14 +155,13 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
                 ntohs(ph->hw_protocol), ph->hook, id);
     }
 
-    // TODO: Get procs PID/Name based on meta data.
-    // TODO: Check whitelist.
     ret = nfq_get_payload(tb, &data);
     if (ret >= 0)
     {
         const struct sniff_ip *ip;              /* The IP header */
         const struct sniff_tcp *tcp;            /* The TCP header */
         const char *payload;                    /* Packet payload */
+        const char *binary_name = NULL;
 
         int size_ip;
         int size_tcp;
@@ -215,6 +216,16 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
 
         printf("[>] Src port: %d\n", ntohs(tcp->th_sport));
         printf("[>] Dst port: %d\n", ntohs(tcp->th_dport));
+
+        binary_name = net_to_pid_name(
+            strdup(inet_ntoa(ip->ip_src)),
+            ntohs(tcp->th_sport),
+            strdup(inet_ntoa(ip->ip_dst)),
+            ntohs(tcp->th_dport)
+        );
+
+        if(binary_name != NULL)
+            printf("[>] Binary: %s\n", binary_name);
 
         /* define/compute tcp payload (segment) offset */
         payload = (u_char *)(data + size_ip + size_tcp);
