@@ -177,7 +177,7 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
         /* print source and destination IP addresses */
         printf("[>] From: %s\n", inet_ntoa(ip->ip_src));
         printf("[>] To: %s\n", inet_ntoa(ip->ip_dst));
-
+        
         /* determine protocol */    
         switch(ip->ip_p) {
             case IPPROTO_TCP:
@@ -284,6 +284,8 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
     struct laf_entry entry = {};
     u_int32_t id = process_pkt(nfa, &entry);
     int verdict = check_whitelist(&entry);
+    free(entry.ip_src);
+    free(entry.ip_dst);
     return nfq_set_verdict(qh, id, verdict, 0, NULL);
 }
 
