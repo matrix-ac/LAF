@@ -7,6 +7,8 @@
 #include <arpa/inet.h>                  /* for inet_ntop(), inet_pton() */
 #include <string.h>                     /* for memcpy(), strcmp() etc. */
 
+#include <signal.h>
+
 #include <libnetfilter_queue/libnetfilter_queue.h>
 
 #include "procs.c"

@@ -9,9 +9,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-// REMOVE THIS!!!!
-#include <arpa/inet.h>                  /* for inet_ntop(), inet_pton() */
-
 // TODO: Replace all strcat /proc/&/ with MACROS
 
 void cat_file(char* dir);
@@ -219,14 +216,14 @@ const char *get_pid_string(char *pid)
 
 	if ((fp = fopen(path,"r")) == NULL)
 	{
-		fprintf(stderr, "Couldn't open %s.\n", path);
+		fprintf(stderr, "Couldn't open file path [%s]. (get_pid_string)\n", path);
 		return rtn;
 	}
 
 	if (fgets(line, sizeof(line), fp) != NULL)
-	{
-		// sscanf(line, "%10s", rtn);
-		rtn = line;
+	{		
+		//sscanf(line, "%[A-Za-z0-9]s", rtn);
+		rtn = line; // BUG Causes segfault on some binary names.
 	}
 	fclose(fp);
 	return rtn;
@@ -247,7 +244,6 @@ unsigned long get_inode(char* path)
 	}
 	return -1;
 }
-
 
 const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint16_t dst_port)
 {
