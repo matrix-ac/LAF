@@ -177,7 +177,7 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
         /* print source and destination IP addresses */
         printf("[>] From: %s\n", inet_ntoa(ip->ip_src));
         printf("[>] To: %s\n", inet_ntoa(ip->ip_dst));
-        
+
         /* determine protocol */    
         switch(ip->ip_p) {
             case IPPROTO_TCP:
@@ -227,6 +227,8 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
         if(binary_name != NULL)
             printf("[>] Binary: %s\n", binary_name);
 
+        binary_name = NULL;
+
         /* define/compute tcp payload (segment) offset */
         payload = (u_char *)(data + size_ip + size_tcp);
 
@@ -234,7 +236,7 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
         size_payload = ntohs(ip->ip_len) - (size_ip + size_tcp);
 
         if (size_payload > 0)
-            printf("   Payload (%d bytes):\n", size_payload);
+            printf("[#] Payload %d bytes.\n", size_payload);
 
         /* DEBUG */
         // int i = 0;
@@ -284,14 +286,18 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
     struct laf_entry entry = {};
     u_int32_t id = process_pkt(nfa, &entry);
     int verdict = check_whitelist(&entry);
-    free(entry.ip_src);
-    free(entry.ip_dst);
     return nfq_set_verdict(qh, id, verdict, 0, NULL);
 }
 
 // TODO: Check user permissions, signal handling.
 int main(int argc, char **argv)
 {
+	uid_t uid=getuid();
+	if (uid>0) {
+		printf("This is a simple test to check if you are root, there is a better way to do this but for now this will do.\nBye.\n");
+		exit(EXIT_FAILURE);
+	}
+
     read_whitelist(); 
     print_allowed();
     struct nfq_handle *h;

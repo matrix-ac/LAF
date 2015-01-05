@@ -21,7 +21,7 @@ char *hex_ip_str(char* hex_ip);
 const char *get_inode_pid_string(unsigned long inode);
 const char *get_pid_string(char *pid);
 unsigned long get_inode(char* path); 
-int print_pid_inode(char* pid); 
+int get_pid_inode(char* pid, unsigned long inode); 
 
 void print_tcp(char* pid)
 {
@@ -102,14 +102,15 @@ int proc_tcp_has_inode(unsigned long search_inode)
 	return rtn;
 }
 
-/* Parse all PIDs FD and check if the I-Nodes match a record in /proc/net/tcp */
-int print_pid_inode(char* pid)
+/* Parse the PID's FD, return when it finds a match for the inode.  */
+int get_pid_inode(char* pid, unsigned long target_inode)
 {
+	int rtn = EXIT_FAILURE;
+
 	char buffer[512] = "/proc/";
 	strcat(buffer, pid);
 	strcat(buffer, "/fd/");
 	
-
     DIR *dirp;
     struct dirent *dp;
     const char *cs;
@@ -120,7 +121,7 @@ int print_pid_inode(char* pid)
     }
 
     char tmp[512] = "";
-    int ret = 0;
+    // unsigned long ret = 0;
     memcpy(tmp, buffer, 512);
     do{
         errno = 0;
@@ -128,9 +129,11 @@ int print_pid_inode(char* pid)
 			for (cs=dp->d_name;*cs;cs++){
 				if (isdigit(*cs)) {
 		    		strcat(tmp, dp->d_name);
-		    		ret = get_inode(tmp);
-		    		if(ret >0)
-						proc_tcp_has_inode(ret);
+					if(get_inode(tmp) == target_inode){
+						// printf("%s (%ld)\n", get_pid_string(pid), ret);
+						rtn = EXIT_SUCCESS;
+						dp = NULL;
+					}
 				}		
 			}
        }
@@ -141,7 +144,7 @@ int print_pid_inode(char* pid)
         perror("error reading directory");
 
     closedir(dirp);
-	return 1;
+	return rtn;
 }
 
 void cat_file(char* dir)
@@ -165,15 +168,20 @@ void cat_file(char* dir)
 	printf("%s\n", buffer);
 }
 
-int get_procs()
+/* ==================================================================================== */
+
+const char *get_inode_pid_string(unsigned long inode)
 {
+	const char *rtn = "Unknown INODE";
+
+	/* Parse all the PIDs in proc */
     DIR *dirp;
     struct dirent *dp;
     const char *cs;
 
     if ((dirp = opendir("/proc/")) == NULL) {
         perror("couldn't open '.'");
-        return -1;
+        return NULL;
     }
 
     do{
@@ -181,9 +189,10 @@ int get_procs()
         if ((dp = readdir(dirp)) != NULL) {
 			for (cs=dp->d_name;*cs;cs++){
 		    	if (isdigit(*cs)){
-		    		printf("%s\n", get_pid_string(dp->d_name));
-					get_pid_string(dp->d_name);
-					print_pid_inode(dp->d_name);
+					if(get_pid_inode(dp->d_name, inode) == EXIT_SUCCESS){
+						rtn = get_pid_string(dp->d_name);
+						dp = NULL;
+					}
 					break;
 				}
 			}
@@ -195,15 +204,6 @@ int get_procs()
     }
 
     closedir(dirp);
-	return EXIT_SUCCESS;
-}
-
-/* ==================================================================================== */
-
-const char *get_inode_pid_string(unsigned long inode)
-{
-	const char *rtn = "Unknown INODE";
-	// printf("Unknown (%ld)\n", inode);
 
 	return rtn;
 }
@@ -225,6 +225,7 @@ const char *get_pid_string(char *pid)
 
 	if (fgets(line, sizeof(line), fp) != NULL)
 	{
+		// sscanf(line, "%10s", rtn);
 		rtn = line;
 	}
 	fclose(fp);
@@ -321,6 +322,6 @@ char* hex_ip_str(char* hex_ip)
 	return strncpy(return_ip, quadip, sizeof(quadip));
 }
 
-int main() {
-	get_procs();
-}
+// int main() {
+// 	get_procs();
+// }
