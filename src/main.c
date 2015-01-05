@@ -286,6 +286,8 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
     struct laf_entry entry = {};
     u_int32_t id = process_pkt(nfa, &entry);
     int verdict = check_whitelist(&entry);
+    free(entry.ip_src);
+    free(entry.ip_dst);
     return nfq_set_verdict(qh, id, verdict, 0, NULL);
 }
 
