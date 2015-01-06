@@ -1,7 +1,7 @@
 #include "main.h"
 
 struct laf_entry allowed[MAX_ALLOWED_WHIETLIST];
-int total_entries = 0;
+int total_entries, stats_pkt_count, stats_pkt_ip, stats_pkt_tcp, stats_pkt_udp, stats_pkt_icmp, stats_pkt_unknown, stats_pkt_blocked, stats_pkt_allowed = 0;
 
 /* Print all whitelisted entries */
 int print_allowed()
@@ -9,7 +9,7 @@ int print_allowed()
     int i; 
     for(i = 0; i < total_entries; i++)
     {
-        printf("allowing traffic to %s ", allowed[i].ip_dst);
+        printf("[>] Allowing traffic to %s ", allowed[i].ip_dst);
         if(allowed[i].port != 0)
         {
             printf("on port %d", allowed[i].port);
@@ -39,7 +39,7 @@ int read_whitelist()
     fp = fopen("whitelist.txt", "r");
 
     if( fp == NULL ){
-        fprintf(stderr, "Error opening the white list file (whitelist.txt).\n");
+        fprintf(stderr, "[!!] Error opening the white list file (whitelist.txt).\n");
         return 1;
     }
 
@@ -60,7 +60,7 @@ int read_whitelist()
                     entry.port = atoi(split_entry);
                     break;
                 default:
-                    fprintf(stderr, "Error reading config, too many tokens!");
+                    fprintf(stderr, "[!!] Error reading config, too many tokens!");
                     return 2;
             }
             c++;
@@ -79,6 +79,8 @@ int read_whitelist()
 /* Process packet form the queue */
 static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
 {
+    stats_pkt_count++;
+
     int id = 0;
     struct nfqnl_msg_packet_hdr *ph;
     int ret;
@@ -118,27 +120,34 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
         switch(ip->ip_p) {
             case IPPROTO_TCP:
                 printf("[>] Protocol: TCP\n");
+                stats_pkt_tcp++;
                 break;
             case IPPROTO_UDP:
                 printf("[>] Protocol: UDP\n");
+                stats_pkt_udp++;
                 //TODO: handle this better
                 curr_entry->ip_src = strdup(inet_ntoa(ip->ip_src));
                 curr_entry->ip_dst = strdup(inet_ntoa(ip->ip_dst));
-                return id;
+                break;
             case IPPROTO_ICMP:
                 printf("[>] Protocol: ICMP\n");
-                return id;
+                stats_pkt_icmp++;
+                break;
             case IPPROTO_IP:
                 printf("[>] Protocol: IP\n");
-                return id;
+                stats_pkt_ip++;
+                break;
             default:
                 printf("[!!] Protocol: unknown\n");
-                return id;
+                stats_pkt_unknown++;
+                break;
         }
 
         // Do nothing else if it's not TCP.
-        if(ip->ip_p != IPPROTO_TCP)
+        if(ip->ip_p != IPPROTO_TCP){
+            stats_pkt_blocked++;
             return id;
+        }
 
         /* define/compute tcp header offset */
         tcp = (struct sniff_tcp*)(data + size_ip);
@@ -194,12 +203,13 @@ int check_whitelist(struct laf_entry *entry)
                     || allowed[i].port == '*'))
         {
             printf("[>] Accepting\n\n");
+            stats_pkt_allowed++;
             return NF_ACCEPT;
         }
     }
 
     printf("[>] Dropping\n\n");
-
+    stats_pkt_blocked++;
     return NF_DROP;
 }
 
@@ -215,13 +225,55 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
     return nfq_set_verdict(qh, id, verdict, 0, NULL);
 }
 
-// TODO: Signal handling.
+static void termination_handler(int signo) {
+    switch (signo) 
+    {
+        case SIGINT:
+            puts("SIGINT\n");
+            break;
+        case SIGHUP:
+            puts("SIGHUP\n");
+            break;
+        case SIGTERM:
+            puts("SIGTERM\n");
+            break;
+        default:
+            puts("Termination.\n");
+            break;
+    }
+    printf("Packets total:   %d\n", stats_pkt_count);
+    printf("Packets allowed: %d\n", stats_pkt_allowed);
+    printf("Packets blocked: %d\n", stats_pkt_blocked);
+    printf("IP: %d, TCP: %d, UDP: %d, ICMP: %d, Unknown: %d\n\n", stats_pkt_ip, stats_pkt_tcp, stats_pkt_udp, stats_pkt_icmp, stats_pkt_unknown);
+
+}
+
 /* Main entry point to the application */
 int main(int argc, char **argv)
 {
+    struct sigaction new_action, old_action;
+
+    /* Set up the structure to specify the new action. */
+    new_action.sa_handler = termination_handler;
+    sigemptyset (&new_action.sa_mask);
+    new_action.sa_flags = 0;
+
+    sigaction (SIGINT, NULL, &old_action);
+    if (old_action.sa_handler != SIG_IGN)
+        sigaction (SIGINT, &new_action, NULL);
+
+    sigaction (SIGHUP, NULL, &old_action);
+    if (old_action.sa_handler != SIG_IGN)
+        sigaction (SIGHUP, &new_action, NULL);
+
+    sigaction (SIGTERM, NULL, &old_action);
+
+    if (old_action.sa_handler != SIG_IGN)
+        sigaction (SIGTERM, &new_action, NULL);
+
 	uid_t uid=getuid();
 	if (uid>0) {
-		printf("This is a simple test to check if you are root, there is a better way to do this but for now this will do.\nBye.\n");
+		printf("[!!] This is a simple test to check if you are root, there is a better way to do this but for now this will do.\nBye.\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -235,7 +287,7 @@ int main(int argc, char **argv)
     int rv;
     char buf[MAX_PKT_BUFFER] __attribute__ ((aligned));
 
-    printf("opening library handle\n");
+    printf("[#] Opening library handle\n");
     h = nfq_open();
     if (!h) {
         fprintf(stderr, "[!!] Error during nfq_open().\n");

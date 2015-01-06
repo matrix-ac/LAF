@@ -80,6 +80,7 @@ int check_whitelist(struct laf_entry *entry);
 /* Callback for the packet */
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
         struct nfq_data *nfa, void *data);
+static void termination_handler(int signo);
 
 /* Takes IP_SRC SRC_PORT, IP_DST DST_PORT and returns a string of the associated binary name with the socket. */
 const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint16_t dst_port);
