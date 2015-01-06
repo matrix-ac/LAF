@@ -4,8 +4,7 @@
 const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint16_t dst_port)
 {
 	FILE* fp;
-	char buffer[4000];
-	char line[1024];
+	char line[LINE_BUFFER_SIZE];
 	const char *rtn = NULL;
 
     unsigned long rxq, txq, time_len, retr, inode;
@@ -64,7 +63,7 @@ char* hex_ip_str(char* hex_ip)
 	qs1[2] = '\0';
 	sscanf(qs1, "%x", &q1);
 
-	sprintf(quadip,"%d.%d.%d.%d\0",q1,q2,q3,q4);
+	sprintf(quadip,"%d.%d.%d.%d",q1,q2,q3,q4);
 
 	char* return_ip = (char*)malloc(sizeof(quadip));
 	if(return_ip == NULL) {
@@ -96,7 +95,7 @@ const char *get_inode_pid_string(unsigned long inode)
 			// 	if (isdigit(*cs)){
 					if(get_pid_inode(dp->d_name, inode) == EXIT_SUCCESS){
 						rtn = get_pid_string(dp->d_name);
-						// printf("Yes there is a binary matching the Inode.\n");
+						// printf("[#] Yes there is a binary matching the Inode.\n");
 						dp = NULL;
 					}
 			// 	}
@@ -118,7 +117,7 @@ int get_pid_inode(char* pid, unsigned long target_inode)
 {
 	int rtn = EXIT_FAILURE;
 
-	char buffer[512] = "/proc/";
+	char buffer[MAX_PATH_LENGTH] = "/proc/";
 	strcat(buffer, pid);
 	strcat(buffer, "/fd/");
 	
@@ -131,9 +130,9 @@ int get_pid_inode(char* pid, unsigned long target_inode)
         return -1;
     }
 
-    char tmp[512] = "";
+    char tmp[MAX_PATH_LENGTH] = "";
     // unsigned long ret = 0;
-    memcpy(tmp, buffer, 512);
+    memcpy(tmp, buffer, MAX_PATH_LENGTH);
     do{
         errno = 0;
         if ((dp = readdir(dirp)) != NULL) {
@@ -148,7 +147,7 @@ int get_pid_inode(char* pid, unsigned long target_inode)
 				}		
 			}
        }
-       memcpy(tmp, buffer, 512);
+       memcpy(tmp, buffer, MAX_PATH_LENGTH);
     }while (dp != NULL);
 
     if (errno != 0)
@@ -162,10 +161,10 @@ int get_pid_inode(char* pid, unsigned long target_inode)
 const char *get_pid_string(char *pid)
 {
 	FILE* fp;
-	char line[1024];
+	char line[LINE_BUFFER_SIZE];
 	const char *rtn = "Unknown PID String";
 
-	char path[256]; 
+	char path[MAX_PATH_LENGTH]; 
 	sprintf(path,"/proc/%s/cmdline", pid);
 
 	if ((fp = fopen(path,"r")) == NULL)
