@@ -1,11 +1,14 @@
-sudo apt-get install libnfnetlink-dev libnetfilter-queue-dev
+Install the required dependencies.
 
-gcc main.c -o LAF -lnfnetlink -lnetfilter_queue
+	sudo apt-get install libnfnetlink-dev libnetfilter-queue-dev
 
-sudo iptables -A OUTPUT -p all -d <dest ip> -j NFQUEUE --queue-num 0
+Compile with make or gcc:
 
-sudo iptables -A INPUT -s 178.17.41.118/32 -j NFQUEUE --queue-num 0
+	gcc main.c procs.c -o LAF -lnfnetlink -lnetfilter_queue
 
+Create an iptables rule:
+
+	sudo iptables -A OUTPUT -p all -j NFQUEUE --queue-num 0
 
 Add entries to the whitelist.txt file as follows:
 
@@ -14,6 +17,3 @@ Add entries to the whitelist.txt file as follows:
 ``<destination_ip> <port>``
 
 `*` can be used for either as an allow all.
-
-
-
