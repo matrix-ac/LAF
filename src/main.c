@@ -112,9 +112,19 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
             return id;
         }
 
+        // TODO Find a cleaner way to get the hostname of the IP address.
+        struct sockaddr_in sa;
+        char host[1024], service[20];
+
+        sa.sin_family = AF_INET;
+        sa.sin_port = 80; 
+        sa.sin_addr = ip->ip_dst;
+
+        getnameinfo(&sa, sizeof sa, host, sizeof host, service, sizeof service, 0);
+
         /* print source and destination IP addresses */
         printf("[>] From: %s\n", inet_ntoa(ip->ip_src));
-        printf("[>] To: %s\n", inet_ntoa(ip->ip_dst));
+        printf("[>] To: %s (%s)\n", host, inet_ntoa(ip->ip_dst));
 
         /* determine protocol */    
         switch(ip->ip_p) {
@@ -245,7 +255,7 @@ static void termination_handler(int signo) {
     printf("Packets allowed: %d\n", stats_pkt_allowed);
     printf("Packets blocked: %d\n", stats_pkt_blocked);
     printf("IP: %d, TCP: %d, UDP: %d, ICMP: %d, Unknown: %d\n\n", stats_pkt_ip, stats_pkt_tcp, stats_pkt_udp, stats_pkt_icmp, stats_pkt_unknown);
-
+    exit(EXIT_SUCCESS);
 }
 
 /* Main entry point to the application */
