@@ -42,7 +42,7 @@ void print_procs_tcp(char* path)
 
 	if((fp=fopen (path,"r")) == NULL)
 	{
-		fprintf (stderr, "Couldn't open %s.\n", path);
+		fprintf(stderr, "Couldn't open file path [%s]. (print_procs_tcp)\n", path);
 		return;
 	}
 
@@ -75,7 +75,7 @@ int proc_tcp_has_inode(unsigned long search_inode)
 
 	if((fp=fopen (path,"r")) == NULL)
 	{
-		fprintf (stderr, "Couldn't open %s.\n", path);
+		fprintf(stderr, "Couldn't open file path [%s]. (proc_tcp_has_inode)\n", path);
 		return rtn;
 	}
 
@@ -113,7 +113,7 @@ int get_pid_inode(char* pid, unsigned long target_inode)
     const char *cs;
 
     if ((dirp = opendir(buffer)) == NULL) {
-        perror("couldn't open file.");
+		// fprintf(stderr, "Couldn't open file path [%s]. (get_pid_inode)\n", buffer); // TODO Commented out to make output nicer. It
         return -1;
     }
 
@@ -127,9 +127,9 @@ int get_pid_inode(char* pid, unsigned long target_inode)
 				if (isdigit(*cs)) {
 		    		strcat(tmp, dp->d_name);
 					if(get_inode(tmp) == target_inode){
-						// printf("%s (%ld)\n", get_pid_string(pid), ret);
+						// printf("%s (%ld)\n", get_pid_string(pid), target_inode);
 						rtn = EXIT_SUCCESS;
-						dp = NULL;
+						// dp = NULL;
 					}
 				}		
 			}
@@ -177,22 +177,22 @@ const char *get_inode_pid_string(unsigned long inode)
     const char *cs;
 
     if ((dirp = opendir("/proc/")) == NULL) {
-        perror("couldn't open '.'");
+		fprintf(stderr, "Couldn't open file path [/proc/]. (get_inode_pid_string)\n");
         return NULL;
     }
 
     do{
         errno = 0;
         if ((dp = readdir(dirp)) != NULL) {
-			for (cs=dp->d_name;*cs;cs++){
-		    	if (isdigit(*cs)){
+			// for (cs=dp->d_name;*cs;cs++){
+			// 	if (isdigit(*cs)){
 					if(get_pid_inode(dp->d_name, inode) == EXIT_SUCCESS){
 						rtn = get_pid_string(dp->d_name);
+						// printf("Yes there is a binary matching the Inode.\n");
 						dp = NULL;
 					}
-					break;
-				}
-			}
+			// 	}
+			// }
        }
     }while(dp != NULL);
 
@@ -209,7 +209,7 @@ const char *get_pid_string(char *pid)
 {
 	FILE* fp;
 	char line[1024];
-	const char *rtn = "Unknown";
+	const char *rtn = "Unknown PID String";
 
 	char path[256]; 
 	sprintf(path,"/proc/%s/comm\0", pid);
@@ -233,7 +233,7 @@ unsigned long get_inode(char* path)
 {
 	struct stat sb;
 	if (stat(path, &sb) == -1) {
-		// perror("stat");
+		// perror("stat"); // TODO Handel Error.
 		return -1;
 	}
 	switch (sb.st_mode & S_IFMT) {
@@ -259,7 +259,7 @@ const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint1
 
 	if((fp=fopen (path,"r")) == NULL)
 	{
-		fprintf (stderr, "Couldn't open %s.\n", path);
+		fprintf(stderr, "Couldn't open file path [%s]. (net_to_pid_name)\n", path);
 		return rtn;
 	}
 
