@@ -19,6 +19,7 @@
 
 struct laf_entry allowed[MAX_ALLOWED_WHIETLIST];
 int total_entries, stats_pkt_count, stats_pkt_ip, stats_pkt_tcp, stats_pkt_udp, stats_pkt_icmp, stats_pkt_unknown, stats_pkt_blocked, stats_pkt_allowed = 0;
+int reload_config = 0;
 
 /* Print all whitelisted entries */
 int print_allowed()
@@ -90,7 +91,19 @@ int read_whitelist()
 
     fclose(fp);
 
+    // TODO: Should read_whitlist exit the application if it fails to read ?
     return 0;
+}
+
+/* load the config */
+int load_config()
+{
+    int rtn = 1;
+
+    rtn = read_whitelist(); 
+    print_allowed();
+
+    return rtn;
 }
 
 /* Process packet form the queue */
@@ -252,27 +265,27 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
     return nfq_set_verdict(qh, id, verdict, 0, NULL);
 }
 
+// TODO: Remove printf/puts from signal handler. 
 static void termination_handler(int signo) {
     switch (signo) 
     {
-        case SIGINT:
-            puts("SIGINT\n");
-            break;
         case SIGHUP:
-            puts("SIGHUP\n");
+            puts("Reloading whitelist.\n");
+            reload_config = 1;
             break;
+        case SIGINT:
         case SIGTERM:
-            puts("SIGTERM\n");
-            break;
         default:
-            puts("Termination.\n");
+            printf("\nPackets total:   %d\n", stats_pkt_count);
+            printf("Packets allowed: %d\n", stats_pkt_allowed);
+            printf("Packets blocked: %d\n", stats_pkt_blocked);
+            printf("IP: %d, TCP: %d, UDP: %d, ICMP: %d, Unknown: %d\n\n", 
+                stats_pkt_ip, stats_pkt_tcp, stats_pkt_udp, stats_pkt_icmp, 
+                stats_pkt_unknown);
+
+            exit(EXIT_SUCCESS);
             break;
     }
-    printf("Packets total:   %d\n", stats_pkt_count);
-    printf("Packets allowed: %d\n", stats_pkt_allowed);
-    printf("Packets blocked: %d\n", stats_pkt_blocked);
-    printf("IP: %d, TCP: %d, UDP: %d, ICMP: %d, Unknown: %d\n\n", stats_pkt_ip, stats_pkt_tcp, stats_pkt_udp, stats_pkt_icmp, stats_pkt_unknown);
-    exit(EXIT_SUCCESS);
 }
 
 /* Main entry point to the application */
@@ -294,18 +307,20 @@ int main(int argc, char **argv)
         sigaction (SIGHUP, &new_action, NULL);
 
     sigaction (SIGTERM, NULL, &old_action);
-
     if (old_action.sa_handler != SIG_IGN)
         sigaction (SIGTERM, &new_action, NULL);
 
-	uid_t uid=getuid();
-	if (uid>0) {
-		printf("[!!] This is a simple test to check if you are root, there is a better way to do this but for now this will do.\nBye.\n");
+	if (getuid() > 0) 
+    {
+        fprintf(stderr, "[!!] This is a simple test to check if you are root, there is a better way to do this but for now this will do.\nBye.\n");
 		exit(EXIT_FAILURE);
 	}
 
-    read_whitelist(); 
-    print_allowed();
+    if (load_config() > 0)
+    {
+        fprintf(stderr, "[!!] Exiting - Unable to load config file.\n");
+        exit(EXIT_FAILURE);
+    }
 
     struct nfq_handle *h;
     struct nfq_q_handle *qh;
@@ -350,6 +365,17 @@ int main(int argc, char **argv)
 
     while ((rv = recv(fd, buf, sizeof(buf), 0)) && rv >= 0) {
         nfq_handle_packet(h, buf, rv);
+
+        if(reload_config == 1)
+        {
+            printf("Reload-Config!\n");
+            if (load_config() > 0)
+            {
+                fprintf(stderr, "[!!] Exiting - Unable to load config file.\n");
+                exit(EXIT_FAILURE);
+            }
+            reload_config = 0;
+        }
     }
 
     printf("[#] Unbinding from queue '0'.\n");

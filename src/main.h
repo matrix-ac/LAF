@@ -90,6 +90,8 @@ int print_allowed();
 int print_entry(struct laf_entry *entry);
 /* Load the whitelist into memory */
 int read_whitelist();
+/* load the config */
+int load_config();
 /* Process packet form the queue */
 static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry);
 /* Check if the whitelist contains this entry */
