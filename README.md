@@ -10,13 +10,13 @@ Linux Application Firewall (LAF) is an application firewall for Linux. It allows
 
 ## Abandoned Projects
 
-- P [Leopard Flower](http://sourceforge.net/projects/leopardflower/) (Proc Method)
+- [Leopard Flower](http://sourceforge.net/projects/leopardflower/) (Proc Method)
   - [active](https://github.com/andreizilla/leopard-flower-firewall) Fork of Leopard, 14 days activity.
   - [Overwatch](https://github.com/ethanwilloner/Overwatch) Fork of Leopard, Stalled 6 months.
-- K [TuxGaurdian](http://tuxguardian.sourceforge.net/) (Kernel Module)
-- K [Program Guard](http://pgrd.sourceforge.net/) (Kernel Module)
+- [TuxGaurdian](http://tuxguardian.sourceforge.net/) (Kernel Module)
+- [Program Guard](http://pgrd.sourceforge.net/) (Kernel Module)
 - [FireFlier](http://fireflier.sourceforge.net/index.html)
-- P [afirewall](https://github.com/jkaessens/afirewall) - Development, Stalled 2 years. (Proc Method)
+- [afirewall](https://github.com/jkaessens/afirewall) - Development, Stalled 2 years. (Proc Method)
 
 ## Related/Interesting Things
 - AppArmor - [Specific Networking Option](http://wiki.apparmor.net/index.php/AppArmor_Core_Policy_Reference#Network_rules)
