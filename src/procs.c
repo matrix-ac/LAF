@@ -60,13 +60,14 @@ const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint1
     	{
 			printf("[>] State %d (inode %ld, uid %d)\n", state, inode, uid);
 			rtn = get_inode_pid_string(inode);
+			break;
     	}
 	}
 
 	fclose(fp);
 	free(ip_src);
 	free(ip_dst);
-
+	
 	return rtn;
 }
 
@@ -136,7 +137,6 @@ const char *get_inode_pid_string(unsigned long inode)
     }
 
     closedir(dirp);
-
 	return rtn;
 }
 
@@ -206,6 +206,7 @@ const char *get_pid_string(char *pid)
 		//sscanf(line, "%[A-Za-z0-9]s", rtn);
 		rtn = line; // BUG Causes segfault on some binary names.
 	}
+
 	fclose(fp);
 	return rtn;
 }
