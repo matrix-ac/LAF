@@ -15,19 +15,6 @@
     along with Linux Application Firewall (LAF).  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <netinet/in.h>
-#include <linux/types.h>
-#include <linux/netfilter.h>            /* for NF_ACCEPT */
-#include <arpa/inet.h>                  /* for inet_ntop(), inet_pton() */
-#include <string.h>                     /* for memcpy(), strcmp() etc. */
-
-#include <signal.h>
-
-#include <libnetfilter_queue/libnetfilter_queue.h>
-
 #define LINE_BUFFER_SIZE 1024
 #define MAX_ALLOWED_WHIETLIST 100
 #define MAX_PKT_BUFFER 4096

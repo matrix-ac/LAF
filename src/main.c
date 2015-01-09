@@ -15,6 +15,20 @@
     along with Linux Application Firewall (LAF).  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <linux/types.h>
+#include <linux/netfilter.h>            /* for NF_ACCEPT */
+#include <arpa/inet.h>                  /* for inet_ntop(), inet_pton() */
+#include <string.h>                     /* for memcpy(), strcmp() etc. */
+#include <signal.h>
+
+#include <libnetfilter_queue/libnetfilter_queue.h>
+
 #include "main.h"
 
 struct laf_entry allowed[MAX_ALLOWED_WHIETLIST];
@@ -128,7 +142,6 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
     {
         const struct sniff_ip *ip;              /* The IP header */
         const struct sniff_tcp *tcp;            /* The TCP header */
-        const char *payload;                    /* Packet payload */
         const char *binary_name = NULL;
 
         int size_ip;
@@ -143,18 +156,20 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
         }
 
         // TODO Find a cleaner way to get the hostname of the IP address.
-        struct sockaddr_in sa;
-        char host[1024], service[20];
+        // struct sockaddr_in sa;
+        // char host[NI_MAXHOST], service[NI_MAXSERV];
 
-        sa.sin_family = AF_INET;
-        sa.sin_port = 80; 
-        sa.sin_addr = ip->ip_dst;
+        // sa.sin_family = AF_INET;
+        // sa.sin_port = 80; 
+        // sa.sin_addr = ip->ip_dst;
 
-        getnameinfo(&sa, sizeof sa, host, sizeof host, service, sizeof service, 0);
+        // getnameinfo(&sa, sizeof sa, host, sizeof host, service, sizeof service, 0);
+        // TODO Handle return value.
 
         /* print source and destination IP addresses */
         printf("[>] From: %s\n", inet_ntoa(ip->ip_src));
-        printf("[>] To: %s (%s)\n", host, inet_ntoa(ip->ip_dst));
+        printf("[>] To: %s\n", inet_ntoa(ip->ip_dst));
+        // printf("[>] To: %s (%s)\n", host, inet_ntoa(ip->ip_dst));
 
         /* determine protocol */    
         switch(ip->ip_p) {
@@ -324,9 +339,7 @@ int main(int argc, char **argv)
 
     struct nfq_handle *h;
     struct nfq_q_handle *qh;
-    struct nfnl_handle *nh;
-    int fd;
-    int rv;
+    int fd, rv;
     char buf[MAX_PKT_BUFFER] __attribute__ ((aligned));
 
     printf("[#] Opening library handle\n");

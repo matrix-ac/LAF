@@ -15,17 +15,6 @@
     along with Linux Application Firewall (LAF).  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <dirent.h>
-#include <ctype.h>
-#include <sys/types.h>
-#include <arpa/inet.h>  
-#include <sys/stat.h>
-#include <unistd.h>
-
 #define LINE_BUFFER_SIZE 1024
 #define MAX_PATH_LENGTH  1024
 
