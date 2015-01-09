@@ -26,6 +26,7 @@
 #include <arpa/inet.h>                  /* for inet_ntop(), inet_pton() */
 #include <string.h>                     /* for memcpy(), strcmp() etc. */
 #include <signal.h>
+#include <assert.h>
 
 #include <libnetfilter_queue/libnetfilter_queue.h>
 
@@ -64,9 +65,8 @@ int print_entry(struct laf_entry *entry)
 /* Load the whitelist into memory */
 int read_whitelist()
 {
-    int line_buff_size = LINE_BUFFER_SIZE;
     FILE *fp;
-    char buff[line_buff_size];
+    char buff[LINE_BUFFER_SIZE];
 
     fp = fopen("whitelist.txt", "r");
 
@@ -75,12 +75,14 @@ int read_whitelist()
         return 1;
     }
 
-    while (fgets(buff, line_buff_size, fp) != NULL)
+    while (fgets(buff, LINE_BUFFER_SIZE, fp) != NULL)
     {   
-        char *split_entry;
-        split_entry = strtok(buff, " ");
-        struct laf_entry entry;
         int c = 0;
+        char *split_entry;
+        struct laf_entry entry;
+
+        split_entry = strtok(buff, " ");
+        
         while(split_entry != NULL)
         {
             switch(c)
@@ -105,7 +107,7 @@ int read_whitelist()
 
     fclose(fp);
 
-    // TODO: Should read_whitlist exit the application if it fails to read ?
+    /* TODO: Should read_whitlist exit the application if it fails to read ? */
     return 0;
 }
 
@@ -123,8 +125,6 @@ int load_config()
 /* Process packet form the queue */
 static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
 {
-    stats_pkt_count++;
-
     int id = 0;
     struct nfqnl_msg_packet_hdr *ph;
     int ret;
@@ -155,21 +155,22 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
             return id;
         }
 
-        // TODO Find a cleaner way to get the hostname of the IP address.
-        // struct sockaddr_in sa;
-        // char host[NI_MAXHOST], service[NI_MAXSERV];
+        /* TODO Find a cleaner way to get the hostname of the IP address. */
+        /*
+        struct sockaddr_in sa;
+        char host[NI_MAXHOST], service[NI_MAXSERV];
 
-        // sa.sin_family = AF_INET;
-        // sa.sin_port = 80; 
-        // sa.sin_addr = ip->ip_dst;
+        sa.sin_family = AF_INET;
+        sa.sin_port = 80; 
+        sa.sin_addr = ip->ip_dst;
 
-        // getnameinfo(&sa, sizeof sa, host, sizeof host, service, sizeof service, 0);
-        // TODO Handle return value.
+        getnameinfo(&sa, sizeof sa, host, sizeof host, service, sizeof service, 0);
+        printf("[>] To: %s (%s)\n", host, inet_ntoa(ip->ip_dst)); TODO Handle return value. 
+        */
 
         /* print source and destination IP addresses */
         printf("[>] From: %s\n", inet_ntoa(ip->ip_src));
         printf("[>] To: %s\n", inet_ntoa(ip->ip_dst));
-        // printf("[>] To: %s (%s)\n", host, inet_ntoa(ip->ip_dst));
 
         /* determine protocol */    
         switch(ip->ip_p) {
@@ -180,7 +181,7 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
             case IPPROTO_UDP:
                 printf("[>] Protocol: UDP\n");
                 stats_pkt_udp++;
-                //TODO: handle this better
+                /* TODO: handle this better */
                 curr_entry->ip_src = strdup(inet_ntoa(ip->ip_src));
                 curr_entry->ip_dst = strdup(inet_ntoa(ip->ip_dst));
                 break;
@@ -198,7 +199,7 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
                 break;
         }
 
-        // Do nothing else if it's not TCP.
+        /* Do nothing else if it's not TCP. */
         if(ip->ip_p != IPPROTO_TCP){
             stats_pkt_blocked++;
             return id;
@@ -244,13 +245,14 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
 /* Check if the whitelist contains this entry */
 int check_whitelist(struct laf_entry *entry)
 {
+    int i; 
+
     if (entry->ip_src == NULL || entry->ip_dst == NULL)
     {
         printf("[>] Dropping\n\n");
         return NF_DROP;
     }
 
-    int i; 
     for(i = 0; i < total_entries; i++)
     {
         if(((strcmp(entry->ip_dst, allowed[i].ip_dst) == 0) || (strcmp(allowed[i].ip_dst, "*")==0))
@@ -272,15 +274,19 @@ int check_whitelist(struct laf_entry *entry)
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
         struct nfq_data *nfa, void *data)
 {
-    struct laf_entry entry = {};
+    struct laf_entry entry = {0}; /* Hack to allow -pedantic to compile */
     u_int32_t id = process_pkt(nfa, &entry);
     int verdict = check_whitelist(&entry);
     free(entry.ip_src);
     free(entry.ip_dst);
+
+    stats_pkt_count++;
+
+    data = data; nfmsg = nfmsg; /* Hack to allow -pedantic to compile */
     return nfq_set_verdict(qh, id, verdict, 0, NULL);
 }
 
-// TODO: Remove printf/puts from signal handler. 
+/* TODO: Remove printf/puts from signal handler. */
 static void termination_handler(int signo) {
     switch (signo) 
     {
@@ -306,7 +312,11 @@ static void termination_handler(int signo) {
 /* Main entry point to the application */
 int main(int argc, char **argv)
 {
+    int fd, rv;
     struct sigaction new_action, old_action;
+    struct nfq_handle *h;
+    struct nfq_q_handle *qh;
+    char buf[MAX_PKT_BUFFER] __attribute__ ((aligned));
 
     /* Set up the structure to specify the new action. */
     new_action.sa_handler = termination_handler;
@@ -337,12 +347,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    struct nfq_handle *h;
-    struct nfq_q_handle *qh;
-    int fd, rv;
-    char buf[MAX_PKT_BUFFER] __attribute__ ((aligned));
-
-    printf("[#] Opening library handle\n");
+    printf("[#] Opening library handle.\n");
     h = nfq_open();
     if (!h) {
         fprintf(stderr, "[!!] Error during nfq_open().\n");
@@ -397,7 +402,8 @@ int main(int argc, char **argv)
     printf("[#] Closing library handle.\n");
     nfq_close(h);
 
+    /* TODO Display help options program arguments */
+    argc = argc; argv = argv; /* Hack to allow -pedantic to compile */
+
     exit(0);
 }
-
-

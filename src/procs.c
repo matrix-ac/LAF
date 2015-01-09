@@ -25,6 +25,7 @@
 #include <arpa/inet.h>  
 #include <sys/stat.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "procs.h"
 
@@ -32,28 +33,35 @@
 const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint16_t dst_port)
 {
 	FILE* fp;
+    
+    int d, uid, timeout; 
+    unsigned int local_port, rem_port, timer_run, state;
+    long inode; 
+    unsigned long rxq, txq, time_len, retr;
+    char rem_addr[128], local_addr[128], more[512];
+
 	char line[LINE_BUFFER_SIZE];
 	const char *rtn = NULL;
 
-    unsigned long rxq, txq, time_len, retr, inode;
-    int local_port, rem_port, d, state, uid, timer_run, timeout; 
-    char rem_addr[128], local_addr[128], more[512];
-    char path[] = "/proc/net/tcp";
 
-	if((fp=fopen (path,"r")) == NULL)
+    fp = fopen ("/proc/net/tcp","r");
+
+	if(fp == NULL)
 	{
-		fprintf(stderr, "Couldn't open file path [%s]. (net_to_pid_name)\n", path);
+		fprintf(stderr, "[!!] Couldn't open file path [/proc/net/tcp]. (net_to_pid_name)\n"); 
+		/* TODO Should the application abort if it can't access /proc/net/tcp as 
+		it will be unable to lookup the binary */
 		return rtn;
 	}
 
-	fgets(line,sizeof(line),fp);  // Skip header line
+	fgets(line,sizeof(line),fp);  /* Skip header line */
 
 	while(fgets(line,sizeof(line),fp) != NULL) 
 	{
-    	sscanf(line,
-    		"%d: %64[0-9A-Fa-f]:%X %64[0-9A-Fa-f]:%X %X %lX:%lX %X:%lX %lX %d %d %ld %512s\n",
-		 		&d, local_addr, &local_port, rem_addr, &rem_port, &state,
-				&txq, &rxq, &timer_run, &time_len, &retr, &uid, &timeout, &inode, more);
+    	sscanf(line, 
+    		"%d: %64[0-9A-Fa-f]:%X %64[0-9A-Fa-f]:%X %X %lX:%lX %X:%lX %lX %d %d %ld %512s\n", 
+    		&d, local_addr, &local_port, rem_addr, &rem_port, &state, &txq, 
+    		&rxq, &timer_run, &time_len, &retr, &uid, &timeout, &inode, more);
 
     	if(strcmp(hex_ip_str(local_addr), ip_src) == 0 && strcmp(hex_ip_str(rem_addr), ip_dst) == 0
     		&& local_port == src_port && rem_port == dst_port)
@@ -74,11 +82,11 @@ const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint1
 /* Convert the reversed HEX IP address to a string */
 char* hex_ip_str(char* hex_ip)
 {
-	char qs4[3], qs3[3], qs2[3], qs1[3];
 	unsigned int q1, q2, q3, q4;
-  	char quadip[16];
+	char qs4[3], qs3[3], qs2[3], qs1[3], quadip[16];
+  	char* return_ip = (char*)malloc(sizeof(quadip));
 
-	// Extract the 4 hex pairs in reverse order.
+	/* Extract the 4 hex pairs in reverse order. */
 	strncpy(qs4, &hex_ip[0], 2);
 	qs4[2] = '\0';
 	sscanf(qs4,"%x",&q4);
@@ -94,7 +102,6 @@ char* hex_ip_str(char* hex_ip)
 
 	sprintf(quadip,"%d.%d.%d.%d",q1,q2,q3,q4);
 
-	char* return_ip = (char*)malloc(sizeof(quadip));
 	if(return_ip == NULL) {
 		fprintf(stderr, "Out of memory.\n");
 		exit(EXIT_FAILURE);
@@ -102,7 +109,10 @@ char* hex_ip_str(char* hex_ip)
 	return strncpy(return_ip, quadip, sizeof(quadip));
 }
 
-/* Takes an I-node number, and returns the name of the binary associated with it */
+/* 
+Takes an I-node number, and returns the name of the binary associated with it 
+TODO should it be limited to files which are numeric only?
+*/
 const char *get_inode_pid_string(unsigned long inode)
 {
 	const char *rtn = "Unknown INODE";
@@ -110,7 +120,6 @@ const char *get_inode_pid_string(unsigned long inode)
 	/* Parse all the PIDs in proc */
     DIR *dirp;
     struct dirent *dp;
-    // const char *cs;
 
     if ((dirp = opendir("/proc/")) == NULL) {
 		fprintf(stderr, "Couldn't open file path [/proc/]. (get_inode_pid_string)\n");
@@ -120,15 +129,10 @@ const char *get_inode_pid_string(unsigned long inode)
     do{
         errno = 0;
         if ((dp = readdir(dirp)) != NULL) {
-			// for (cs=dp->d_name;*cs;cs++){
-			// 	if (isdigit(*cs)){
-					if(get_pid_inode(dp->d_name, inode) == EXIT_SUCCESS){
-						rtn = get_pid_string(dp->d_name);
-						// printf("[#] Yes there is a binary matching the Inode.\n");
-						dp = NULL;
-					}
-			// 	}
-			// }
+			if(get_pid_inode(dp->d_name, inode) == EXIT_SUCCESS){
+				rtn = get_pid_string(dp->d_name);
+				dp = NULL;
+			}
        }
     }while(dp != NULL);
 
@@ -140,39 +144,35 @@ const char *get_inode_pid_string(unsigned long inode)
 	return rtn;
 }
 
-/* Parse the PID's FD, returns when it finds a match for the inode. */
+/* 
+Parse the PID's FD, returns when it finds a match for the inode. 
+TODO should it be limited to files which are numeric only?
+*/
 int get_pid_inode(char* pid, unsigned long target_inode)
 {
 	int rtn = EXIT_FAILURE;
-
 	char buffer[MAX_PATH_LENGTH] = "/proc/";
+	DIR *dirp;
+    struct dirent *dp;
+    char tmp[MAX_PATH_LENGTH] = "";
+
 	strcat(buffer, pid);
 	strcat(buffer, "/fd/");
-	
-    DIR *dirp;
-    struct dirent *dp;
-    const char *cs;
 
     if ((dirp = opendir(buffer)) == NULL) {
-		// fprintf(stderr, "Couldn't open file path [%s]. (get_pid_inode)\n", buffer); // TODO Commented out to make output nicer. It
+		/* fprintf(stderr, "Couldn't open file path [%s]. (get_pid_inode)\n", buffer); */ 
+		/* TODO Commented out to make output nicer. - Should handle error messages correctly. */ 
         return -1;
     }
 
-    char tmp[MAX_PATH_LENGTH] = "";
-    // unsigned long ret = 0;
     memcpy(tmp, buffer, MAX_PATH_LENGTH);
     do{
         errno = 0;
         if ((dp = readdir(dirp)) != NULL) {
-			for (cs=dp->d_name;*cs;cs++){
-				if (isdigit(*cs)) {
-		    		strcat(tmp, dp->d_name);
-					if(get_inode(tmp) == target_inode){
-						// printf("%s (%ld)\n", get_pid_string(pid), target_inode);
-						rtn = EXIT_SUCCESS;
-						// dp = NULL;
-					}
-				}		
+			strcat(tmp, dp->d_name);
+			if(get_inode(tmp) == target_inode){
+				rtn = EXIT_SUCCESS;
+				/* dp = NULL; */
 			}
        }
        memcpy(tmp, buffer, MAX_PATH_LENGTH);
@@ -203,26 +203,27 @@ const char *get_pid_string(char *pid)
 
 	if (fgets(line, sizeof(line), fp) != NULL)
 	{		
-		//sscanf(line, "%[A-Za-z0-9]s", rtn);
-		rtn = line; // BUG Causes segfault on some binary names.
+		/* sscanf(line, "%[A-Za-z0-9]s", rtn); */
+		/* TODO Reading /proc/PID/cmdline better */
+		rtn = line;
 	}
 
 	fclose(fp);
 	return rtn;
 }
 
-/* Returns the inode of the passed file path */
+/* eturns the inode of the passed file path */
 unsigned long get_inode(char* path)
 {
 	struct stat sb;
 	if (stat(path, &sb) == -1) {
-		// perror("stat"); // TODO Handel Error.
+		/* perror("stat"); */ /* TODO Handle Error. */
 		return -1;
 	}
 	switch (sb.st_mode & S_IFMT) {
 		case S_IFSOCK: return (long) sb.st_ino;
 			break;
-		default: //printf("Not A socket\n");
+		default: /* printf("Not A socket\n"); */
 			break;
 	}
 	return -1;
