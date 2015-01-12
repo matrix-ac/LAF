@@ -58,16 +58,24 @@ const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint1
 
 	while(fgets(line,sizeof(line),fp) != NULL) 
 	{
+		/* Convert the reversed hex IP addresses to human readable format */ 
+    	char *local_addr_conversion = hex_ip_str(local_addr);
+    	char *rem_addr_conversion   = hex_ip_str(rem_addr);
+    	
     	sscanf(line, 
     		"%d: %64[0-9A-Fa-f]:%X %64[0-9A-Fa-f]:%X %X %lX:%lX %X:%lX %lX %d %d %ld %512s\n", 
     		&d, local_addr, &local_port, rem_addr, &rem_port, &state, &txq, 
     		&rxq, &timer_run, &time_len, &retr, &uid, &timeout, &inode, more);
 
-    	if(strcmp(hex_ip_str(local_addr), ip_src) == 0 && strcmp(hex_ip_str(rem_addr), ip_dst) == 0
+
+    	if(strcmp(local_addr_conversion, ip_src) == 0 && strcmp(rem_addr_conversion, ip_dst) == 0
     		&& local_port == src_port && rem_port == dst_port)
     	{
 			printf("[>] State %d (inode %ld, uid %d)\n", state, inode, uid);
 			rtn = get_inode_pid_string(inode);
+			
+			free(local_addr_conversion);
+			free(rem_addr_conversion);
 			break;
     	}
 	}
@@ -75,7 +83,7 @@ const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint1
 	fclose(fp);
 	free(ip_src);
 	free(ip_dst);
-	
+
 	return rtn;
 }
 
@@ -84,7 +92,8 @@ char* hex_ip_str(char* hex_ip)
 {
 	unsigned int q1, q2, q3, q4;
 	char qs4[3], qs3[3], qs2[3], qs1[3], quadip[16];
-  	char* return_ip = (char*)malloc(sizeof(quadip));
+	/* BUG: 83,120 bytes in 5,195 blocks are definitely lost in loss record 5 of 7 */
+  	char* return_ip = (char*)malloc(sizeof(quadip)); /* BUG: Needs to be freed */
 
 	/* Extract the 4 hex pairs in reverse order. */
 	strncpy(qs4, &hex_ip[0], 2);
@@ -212,7 +221,7 @@ const char *get_pid_string(char *pid)
 	return rtn;
 }
 
-/* eturns the inode of the passed file path */
+/* Returns the inode of the passed file path */
 unsigned long get_inode(char* path)
 {
 	struct stat sb;
