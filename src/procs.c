@@ -29,6 +29,21 @@
 
 #include "procs.h"
 
+static const char *state_name[] = {
+	"UNKNOWN",
+	"ESTABLISHED",
+	"SYN-SENT",
+	"SYN-RECV",
+	"FIN-WAIT-1",
+	"FIN-WAIT-2",
+	"TIME-WAIT",
+	"UNCONN",
+	"CLOSE-WAIT",
+	"LAST-ACK",
+	"LISTEN",
+	"CLOSING",
+};
+
 /* Takes IP_SRC SRC_PORT, IP_DST DST_PORT and returns a string of the associated binary name with the socket. */
 const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint16_t dst_port)
 {
@@ -71,7 +86,7 @@ const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint1
     	if(strcmp(local_addr_conversion, ip_src) == 0 && strcmp(rem_addr_conversion, ip_dst) == 0
     		&& local_port == src_port && rem_port == dst_port)
     	{
-			printf("[>] State %d (inode %ld, uid %d)\n", state, inode, uid);
+			printf("[>] State %s (inode %ld, uid %d)\n", state_name[state], inode, uid);
 			rtn = get_inode_pid_string(inode);
 			
 			free(local_addr_conversion);
