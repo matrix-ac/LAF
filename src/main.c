@@ -42,10 +42,10 @@ int print_allowed()
     int i; 
     for(i = 0; i < total_entries; i++)
     {
-        printf("[>] Allowing traffic to %s ", allowed[i].ip_dst);
+        printf("[>] Allowing traffic to %s from %s", allowed[i].ip_dst, allowed[i].binary_name);
         if(allowed[i].port != 0)
         {
-            printf("on port %d", allowed[i].port);
+            printf(" on port %d", allowed[i].port);
         }
         printf("\n");
     }
@@ -55,6 +55,7 @@ int print_allowed()
 /* Print a single entry */
 int print_entry(struct laf_entry *entry)
 {
+    printf("'%s'\t", entry->binary_name);
     printf("'%s'\t", entry->ip_src);
     printf("'%s'\t", entry->ip_dst);
     printf("'%d'\n", entry->port);
@@ -88,9 +89,12 @@ int read_whitelist()
             switch(c)
             {
                 case 0:
-                    entry.ip_dst = strdup(split_entry);
+                    entry.binary_name = strdup(split_entry);
                     break;
                 case 1:
+                    entry.ip_dst = strdup(split_entry);
+                    break;
+                case 2:
                     entry.port = atoi(split_entry);
                     break;
                 default:
@@ -223,9 +227,17 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
             ntohs(tcp->th_dport)
         );
 
-        if(binary_name != NULL)
+        if(binary_name != NULL){
             printf("[>] Binary: %s\n", binary_name);
+        } else {
+            binary_name = "";
+        }
 
+        curr_entry->binary_name = strdup(binary_name);
+        curr_entry->ip_src = strdup(inet_ntoa(ip->ip_src));
+        curr_entry->ip_dst = strdup(inet_ntoa(ip->ip_dst));
+        curr_entry->port = ntohs(tcp->th_dport);
+        
         binary_name = NULL;
 
         /* compute tcp payload (segment) size */
@@ -234,9 +246,6 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
         if (size_payload > 0)
             printf("[#] Payload %d bytes.\n", size_payload);
 
-        curr_entry->ip_src = strdup(inet_ntoa(ip->ip_src));
-        curr_entry->ip_dst = strdup(inet_ntoa(ip->ip_dst));
-        curr_entry->port = ntohs(tcp->th_dport);
     }
 
     return id;
@@ -255,7 +264,8 @@ int check_whitelist(struct laf_entry *entry)
 
     for(i = 0; i < total_entries; i++)
     {
-        if(((strcmp(entry->ip_dst, allowed[i].ip_dst) == 0) || (strcmp(allowed[i].ip_dst, "*")==0))
+        if(((strcmp(entry->binary_name, allowed[i].binary_name) == 0) || (strcmp(allowed[i].binary_name, "*") == 0))
+                && ((strcmp(entry->ip_dst, allowed[i].ip_dst) == 0) || (strcmp(allowed[i].ip_dst, "*")==0))
                 && (entry->port == allowed[i].port 
                     || allowed[i].port == '*'))
         {
@@ -277,6 +287,7 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
     struct laf_entry entry = {0}; /* Hack to allow -pedantic to compile */
     u_int32_t id = process_pkt(nfa, &entry);
     int verdict = check_whitelist(&entry);
+    free(entry.binary_name);
     free(entry.ip_src);
     free(entry.ip_dst);
 

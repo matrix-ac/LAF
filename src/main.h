@@ -66,6 +66,7 @@ struct sniff_tcp {
 /* Structure for whitelist entry */
 struct laf_entry 
 {
+    char *binary_name;
     char *ip_src;
     char *ip_dst;
     uint16_t port;
