@@ -267,7 +267,7 @@ int check_whitelist(struct laf_entry *entry)
         if(((strcmp(entry->binary_name, allowed[i].binary_name) == 0) || (strcmp(allowed[i].binary_name, "*") == 0))
                 && ((strcmp(entry->ip_dst, allowed[i].ip_dst) == 0) || (strcmp(allowed[i].ip_dst, "*")==0))
                 && (entry->port == allowed[i].port 
-                    || allowed[i].port == '*'))
+                    || allowed[i].port == atoi("*")))
         {
             printf("[>] Accepting\n\n");
             stats_pkt_allowed++;
