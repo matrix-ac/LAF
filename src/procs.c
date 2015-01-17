@@ -74,25 +74,28 @@ const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint1
 	while(fgets(line,sizeof(line),fp) != NULL) 
 	{
 		/* Convert the reversed hex IP addresses to human readable format */ 
-    	char *local_addr_conversion = hex_ip_str(local_addr);
-    	char *rem_addr_conversion   = hex_ip_str(rem_addr);
-    	
+    	char *local_addr_conversion;
+    	char *rem_addr_conversion;
+
     	sscanf(line, 
     		"%d: %64[0-9A-Fa-f]:%X %64[0-9A-Fa-f]:%X %X %lX:%lX %X:%lX %lX %d %d %ld %512s\n", 
     		&d, local_addr, &local_port, rem_addr, &rem_port, &state, &txq, 
     		&rxq, &timer_run, &time_len, &retr, &uid, &timeout, &inode, more);
 
-
+    	local_addr_conversion = hex_ip_str(local_addr);
+    	rem_addr_conversion   = hex_ip_str(rem_addr);
+        
     	if(strcmp(local_addr_conversion, ip_src) == 0 && strcmp(rem_addr_conversion, ip_dst) == 0
     		&& local_port == src_port && rem_port == dst_port)
     	{
 			printf("[>] State %s (inode %ld, uid %d)\n", state_name[state], inode, uid);
 			rtn = get_inode_pid_string(inode);
-			
-			free(local_addr_conversion);
-			free(rem_addr_conversion);
 			break;
     	}
+
+        free(local_addr_conversion);
+        free(rem_addr_conversion);
+
 	}
 
 	fclose(fp);
