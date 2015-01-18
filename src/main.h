@@ -18,6 +18,7 @@
 #define LINE_BUFFER_SIZE 1024
 #define MAX_ALLOWED_WHIETLIST 100
 #define MAX_PKT_BUFFER 4096
+#define WHITELIST "whitelist.txt"
 
 /* IP header */
 struct sniff_ip {
@@ -84,6 +85,8 @@ int load_config();
 static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry);
 /* Check if the whitelist contains this entry */
 int check_whitelist(struct laf_entry *entry);
+/* Adds an entry to the whitlist */
+int add_entry(struct laf_entry *entry);
 /* Callback for the packet */
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
         struct nfq_data *nfa, void *data);

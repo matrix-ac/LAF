@@ -27,6 +27,7 @@
 #include <string.h>                     /* for memcpy(), strcmp() etc. */
 #include <signal.h>
 #include <assert.h>
+#include <ctype.h>
 
 #include <libnetfilter_queue/libnetfilter_queue.h>
 
@@ -69,12 +70,15 @@ int read_whitelist()
     FILE *fp;
     char buff[LINE_BUFFER_SIZE];
 
-    fp = fopen("whitelist.txt", "r");
+    fp = fopen("whitelist.txt", "w+");
 
     if( fp == NULL ){
         fprintf(stderr, "[!!] Error opening the white list file (whitelist.txt).\n");
         return 1;
     }
+
+    /* Make sure the allowed list is zerored */
+    memset(allowed, 0, MAX_ALLOWED_WHIETLIST);
 
     while (fgets(buff, LINE_BUFFER_SIZE, fp) != NULL)
     {   
@@ -254,7 +258,7 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
 /* Check if the whitelist contains this entry */
 int check_whitelist(struct laf_entry *entry)
 {
-    int i; 
+    int i = 0, response = 0;
 
     if (entry->ip_src == NULL || entry->ip_dst == NULL)
     {
@@ -269,15 +273,52 @@ int check_whitelist(struct laf_entry *entry)
                 && (entry->port == allowed[i].port 
                     || allowed[i].port == atoi("*")))
         {
-            printf("[>] Accepting\n\n");
+            printf("[>] Whitelist - Accepting\n\n");
             stats_pkt_allowed++;
             return NF_ACCEPT;
         }
     }
 
-    printf("[>] Dropping\n\n");
-    stats_pkt_blocked++;
-    return NF_DROP;
+    /* Handle crazy input.*/
+    printf("\n\n[?] Allow [y/N] ");
+    scanf("%d", &response);
+    /* TODO Check user input!! */
+    switch (response) {
+        case 'y':
+        case 'Y':
+        case 1:
+            add_entry(entry);
+            load_config();
+            return NF_REPEAT;
+            break;
+        case 'n':
+        case 'N':
+        default:
+            printf("[>] Dropping\n\n");
+            stats_pkt_blocked++;
+            return NF_DROP;
+            break;
+    }
+}
+
+/* Adds an entry to the whitlist */
+int add_entry(struct laf_entry *entry) {
+    int rtn = -1;
+    FILE* fp;
+    fp = fopen (WHITELIST,"a+");
+
+    if(fp == NULL)
+    {
+        fprintf(stderr, "[!!] Couldn't open file path [%s]. (add_entry)\n", WHITELIST); 
+        return -1;
+    }
+
+    rtn = fprintf(fp, "%s %s %d\n", entry->binary_name, entry->ip_dst, entry->port);
+    if(rtn > 0) {
+        printf("[>] Written %s %s %d to %s.\n", entry->binary_name, entry->ip_dst, entry->port, WHITELIST);
+    }
+    fclose(fp);
+    return rtn;
 }
 
 /* Callback for the packet */
