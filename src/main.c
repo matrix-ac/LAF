@@ -147,6 +147,7 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
         const struct sniff_ip *ip;              /* The IP header */
         const struct sniff_tcp *tcp;            /* The TCP header */
         const char *binary_name = NULL;
+        const char *new_binary_name;
 
         int size_ip;
         int size_tcp;
@@ -228,7 +229,6 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
                 ntohs(tcp->th_dport)
                 );
 
-        const char *new_binary_name = NULL;
         if(binary_name != NULL){
             new_binary_name = get_actual_binary_name(binary_name);
             if (new_binary_name == NULL)
