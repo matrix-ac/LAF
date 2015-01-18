@@ -1,19 +1,19 @@
 /*
-    This file is part of Linux Application Firewall (LAF).
+   This file is part of Linux Application Firewall (LAF).
 
-    Linux Application Firewall (LAF) is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    any later version.
+   Linux Application Firewall (LAF) is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
 
-    Linux Application Firewall (LAF) is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+   Linux Application Firewall (LAF) is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with Linux Application Firewall (LAF).  If not, see <http://www.gnu.org/licenses/>.
-*/
+   You should have received a copy of the GNU General Public License
+   along with Linux Application Firewall (LAF).  If not, see <http://www.gnu.org/licenses/>.
+   */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +32,7 @@
 #include <libnetfilter_queue/libnetfilter_queue.h>
 
 #include "main.h"
+#include "config.h"
 
 struct laf_entry allowed[MAX_ALLOWED_WHIETLIST];
 int total_entries, stats_pkt_count, stats_pkt_ip, stats_pkt_tcp, stats_pkt_udp, stats_pkt_icmp, stats_pkt_unknown, stats_pkt_blocked, stats_pkt_allowed = 0;
@@ -70,15 +71,16 @@ int read_whitelist()
     FILE *fp;
     char buff[LINE_BUFFER_SIZE];
 
-    fp = fopen("whitelist.txt", "w+");
+    /* TODO Check file exists */
+    fp = fopen(WHITELIST, "r");
 
     if( fp == NULL ){
-        fprintf(stderr, "[!!] Error opening the white list file (whitelist.txt).\n");
+        fprintf(stderr, "[!!] Error opening the white list file (%s).\n", WHITELIST);
         return 1;
     }
 
     /* Make sure the allowed list is zerored */
-    memset(allowed, 0, MAX_ALLOWED_WHIETLIST);
+    /*memset(allowed, 0, MAX_ALLOWED_WHIETLIST);*/
 
     while (fgets(buff, LINE_BUFFER_SIZE, fp) != NULL)
     {   
@@ -87,7 +89,7 @@ int read_whitelist()
         struct laf_entry entry;
 
         split_entry = strtok(buff, " ");
-        
+
         while(split_entry != NULL)
         {
             switch(c)
@@ -141,8 +143,11 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
     ph = nfq_get_msg_packet_hdr(tb);
     if (ph) {
         id = ntohl(ph->packet_id);
-        printf("[#] hw_protocol=0x%04x hook=%u id=%u \n",
-                ntohs(ph->hw_protocol), ph->hook, id);
+        if(VERBOSE_LEVEL > 0)
+        {
+            printf("[#] hw_protocol=0x%04x hook=%u id=%u \n",
+                    ntohs(ph->hw_protocol), ph->hook, id);
+        }
     }
 
     ret = nfq_get_payload(tb, &data);
@@ -151,6 +156,7 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
         const struct sniff_ip *ip;              /* The IP header */
         const struct sniff_tcp *tcp;            /* The TCP header */
         const char *binary_name = NULL;
+        const char *new_binary_name;
 
         int size_ip;
         int size_tcp;
@@ -165,40 +171,56 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
 
         /* TODO Find a cleaner way to get the hostname of the IP address. */
         /*
-        struct sockaddr_in sa;
-        char host[NI_MAXHOST], service[NI_MAXSERV];
+           struct sockaddr_in sa;
+           char host[NI_MAXHOST], service[NI_MAXSERV];
 
-        sa.sin_family = AF_INET;
-        sa.sin_port = 80; 
-        sa.sin_addr = ip->ip_dst;
+           sa.sin_family = AF_INET;
+           sa.sin_port = 80; 
+           sa.sin_addr = ip->ip_dst;
 
-        getnameinfo(&sa, sizeof sa, host, sizeof host, service, sizeof service, 0);
-        printf("[>] To: %s (%s)\n", host, inet_ntoa(ip->ip_dst)); TODO Handle return value. 
-        */
+           getnameinfo(&sa, sizeof sa, host, sizeof host, service, sizeof service, 0);
+           printf("[>] To: %s (%s)\n", host, inet_ntoa(ip->ip_dst)); TODO Handle return value. 
+           */
 
         /* print source and destination IP addresses */
-        printf("[>] From: %s\n", inet_ntoa(ip->ip_src));
-        printf("[>] To: %s\n", inet_ntoa(ip->ip_dst));
+        if(VERBOSE_LEVEL > 0)
+        {
+            printf("[>] From: %s\n", inet_ntoa(ip->ip_src));
+            printf("[>] To: %s\n", inet_ntoa(ip->ip_dst));
+        }
 
         /* determine protocol */    
         switch(ip->ip_p) {
             case IPPROTO_TCP:
-                printf("[>] Protocol: TCP\n");
+                if(VERBOSE_LEVEL > 0)
+                {
+                    printf("[>] Protocol: TCP\n");
+                }
                 stats_pkt_tcp++;
                 break;
             case IPPROTO_UDP:
-                printf("[>] Protocol: UDP\n");
+                if(VERBOSE_LEVEL > 0)
+                {
+                    printf("[>] Protocol: UDP\n");
+                }
                 stats_pkt_udp++;
                 /* TODO: handle this better */
                 curr_entry->ip_src = strdup(inet_ntoa(ip->ip_src));
                 curr_entry->ip_dst = strdup(inet_ntoa(ip->ip_dst));
                 break;
             case IPPROTO_ICMP:
-                printf("[>] Protocol: ICMP\n");
+                if(VERBOSE_LEVEL > 0)
+                {
+                    printf("[>] Protocol: ICMP\n");
+                }
                 stats_pkt_icmp++;
                 break;
             case IPPROTO_IP:
-                printf("[>] Protocol: IP\n");
+
+                if(VERBOSE_LEVEL > 0)
+                {
+                    printf("[>] Protocol: IP\n");
+                }
                 stats_pkt_ip++;
                 break;
             default:
@@ -221,35 +243,48 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
             return id;
         }
 
-        printf("[>] Src port: %d\n", ntohs(tcp->th_sport));
-        printf("[>] Dst port: %d\n", ntohs(tcp->th_dport));
-
-        binary_name = net_to_pid_name(
-            strdup(inet_ntoa(ip->ip_src)),
-            ntohs(tcp->th_sport),
-            strdup(inet_ntoa(ip->ip_dst)),
-            ntohs(tcp->th_dport)
-        );
-
-        if(binary_name != NULL){
-            printf("[>] Binary: %s\n", binary_name);
-        } else {
-            binary_name = "";
+        if(VERBOSE_LEVEL > 0)
+        {
+            printf("[>] Src port: %d\n", ntohs(tcp->th_sport));
+            printf("[>] Dst port: %d\n", ntohs(tcp->th_dport));
         }
 
-        curr_entry->binary_name = strdup(binary_name);
+        binary_name = net_to_pid_name(
+                strdup(inet_ntoa(ip->ip_src)),
+                ntohs(tcp->th_sport),
+                strdup(inet_ntoa(ip->ip_dst)),
+                ntohs(tcp->th_dport)
+                );
+
+        if(binary_name != NULL){
+            new_binary_name = get_actual_binary_name(binary_name);
+            if (new_binary_name == NULL)
+            {
+                new_binary_name = binary_name;
+            }
+            if(VERBOSE_LEVEL > 0)
+            {
+                printf("[>] Binary: %s\n", new_binary_name);
+            }
+        } else {
+            new_binary_name = malloc(0);
+        }
+
+        curr_entry->binary_name = new_binary_name;
         curr_entry->ip_src = strdup(inet_ntoa(ip->ip_src));
         curr_entry->ip_dst = strdup(inet_ntoa(ip->ip_dst));
         curr_entry->port = ntohs(tcp->th_dport);
-        
+
         binary_name = NULL;
 
         /* compute tcp payload (segment) size */
         size_payload = ntohs(ip->ip_len) - (size_ip + size_tcp);
 
         if (size_payload > 0)
-            printf("[#] Payload %d bytes.\n", size_payload);
-
+            if(VERBOSE_LEVEL > 0)
+            {
+                printf("[#] Payload %d bytes.\n", size_payload);
+            }
     }
 
     return id;
@@ -262,7 +297,11 @@ int check_whitelist(struct laf_entry *entry)
 
     if (entry->ip_src == NULL || entry->ip_dst == NULL)
     {
-        printf("[>] Dropping\n\n");
+
+        if(VERBOSE_LEVEL > 0)
+        {
+            printf("[>] Dropping\n\n");
+        }
         return NF_DROP;
     }
 
@@ -273,7 +312,11 @@ int check_whitelist(struct laf_entry *entry)
                 && (entry->port == allowed[i].port 
                     || allowed[i].port == atoi("*")))
         {
-            printf("[>] Whitelist - Accepting\n\n");
+
+            if(VERBOSE_LEVEL > 0)
+            {
+                printf("[>] Whitelist - Accepting\n\n");
+            }
             stats_pkt_allowed++;
             return NF_ACCEPT;
         }
@@ -294,7 +337,10 @@ int check_whitelist(struct laf_entry *entry)
         case 'n':
         case 'N':
         default:
-            printf("[>] Dropping\n\n");
+            if(VERBOSE_LEVEL > 0)
+            {
+                printf("[>] Dropping\n\n");
+            }
             stats_pkt_blocked++;
             return NF_DROP;
             break;
@@ -328,7 +374,7 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
     struct laf_entry entry = {0}; /* Hack to allow -pedantic to compile */
     u_int32_t id = process_pkt(nfa, &entry);
     int verdict = check_whitelist(&entry);
-    free(entry.binary_name);
+    free((char *) entry.binary_name);
     free(entry.ip_src);
     free(entry.ip_dst);
 
@@ -353,8 +399,8 @@ static void termination_handler(int signo) {
             printf("Packets allowed: %d\n", stats_pkt_allowed);
             printf("Packets blocked: %d\n", stats_pkt_blocked);
             printf("IP: %d, TCP: %d, UDP: %d, ICMP: %d, Unknown: %d\n\n", 
-                stats_pkt_ip, stats_pkt_tcp, stats_pkt_udp, stats_pkt_icmp, 
-                stats_pkt_unknown);
+                    stats_pkt_ip, stats_pkt_tcp, stats_pkt_udp, stats_pkt_icmp, 
+                    stats_pkt_unknown);
 
             exit(EXIT_SUCCESS);
             break;
@@ -387,11 +433,11 @@ int main(int argc, char **argv)
     if (old_action.sa_handler != SIG_IGN)
         sigaction (SIGTERM, &new_action, NULL);
 
-	if (getuid() > 0) 
+    if (getuid() > 0) 
     {
         fprintf(stderr, "[!!] This is a simple test to check if you are root, there is a better way to do this but for now this will do.\nBye.\n");
-		exit(EXIT_FAILURE);
-	}
+        exit(EXIT_FAILURE);
+    }
 
     if (load_config() > 0)
     {
@@ -458,4 +504,23 @@ int main(int argc, char **argv)
     argc = argc; argv = argv; /* Hack to allow -pedantic to compile */
 
     exit(0);
+}
+
+const char* get_actual_binary_name(const char* path)
+{
+    char *last_split;
+    char *split_path = strdup(path);
+    char *non_const_path = strdup(path);
+    last_split = strtok(non_const_path, "/");
+    while(last_split != NULL)
+    {
+        last_split = strtok(NULL, "/");
+        if(last_split != NULL)
+        {
+            split_path = strdup(last_split);
+        }
+    }   
+
+    free(non_const_path);
+    return (const char *) split_path;
 }
