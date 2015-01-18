@@ -66,7 +66,7 @@ struct sniff_tcp {
 /* Structure for whitelist entry */
 struct laf_entry 
 {
-    char *binary_name;
+    const char *binary_name;
     char *ip_src;
     char *ip_dst;
     uint16_t port;
@@ -91,3 +91,4 @@ static void termination_handler(int signo);
 
 /* Takes IP_SRC SRC_PORT, IP_DST DST_PORT and returns a string of the associated binary name with the socket. */
 const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint16_t dst_port);
+const char* get_actual_binary_name(const char* path);
