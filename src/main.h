@@ -15,9 +15,6 @@
     along with Linux Application Firewall (LAF).  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define LINE_BUFFER_SIZE 1024
-#define MAX_ALLOWED_WHIETLIST 100
-#define MAX_PKT_BUFFER 4096
 
 /* IP header */
 struct sniff_ip {

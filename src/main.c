@@ -31,6 +31,7 @@
 #include <libnetfilter_queue/libnetfilter_queue.h>
 
 #include "main.h"
+#include "config.h"
 
 struct laf_entry allowed[MAX_ALLOWED_WHIETLIST];
 int total_entries, stats_pkt_count, stats_pkt_ip, stats_pkt_tcp, stats_pkt_udp, stats_pkt_icmp, stats_pkt_unknown, stats_pkt_blocked, stats_pkt_allowed = 0;
@@ -137,8 +138,11 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
     ph = nfq_get_msg_packet_hdr(tb);
     if (ph) {
         id = ntohl(ph->packet_id);
-        printf("[#] hw_protocol=0x%04x hook=%u id=%u \n",
-                ntohs(ph->hw_protocol), ph->hook, id);
+        if(VERBOSE_LEVEL > 0)
+        {
+            printf("[#] hw_protocol=0x%04x hook=%u id=%u \n",
+                    ntohs(ph->hw_protocol), ph->hook, id);
+        }
     }
 
     ret = nfq_get_payload(tb, &data);
@@ -174,29 +178,44 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
            */
 
         /* print source and destination IP addresses */
-        printf("[>] From: %s\n", inet_ntoa(ip->ip_src));
-        printf("[>] To: %s\n", inet_ntoa(ip->ip_dst));
-
+        if(VERBOSE_LEVEL > 0)
+        {
+            printf("[>] From: %s\n", inet_ntoa(ip->ip_src));
+            printf("[>] To: %s\n", inet_ntoa(ip->ip_dst));
+        }
 
         /* determine protocol */    
         switch(ip->ip_p) {
             case IPPROTO_TCP:
-                printf("[>] Protocol: TCP\n");
+                if(VERBOSE_LEVEL > 0)
+                {
+                    printf("[>] Protocol: TCP\n");
+                }
                 stats_pkt_tcp++;
                 break;
             case IPPROTO_UDP:
-                printf("[>] Protocol: UDP\n");
+                if(VERBOSE_LEVEL > 0)
+                {
+                    printf("[>] Protocol: UDP\n");
+                }
                 stats_pkt_udp++;
                 /* TODO: handle this better */
                 curr_entry->ip_src = strdup(inet_ntoa(ip->ip_src));
                 curr_entry->ip_dst = strdup(inet_ntoa(ip->ip_dst));
                 break;
             case IPPROTO_ICMP:
-                printf("[>] Protocol: ICMP\n");
+                if(VERBOSE_LEVEL > 0)
+                {
+                    printf("[>] Protocol: ICMP\n");
+                }
                 stats_pkt_icmp++;
                 break;
             case IPPROTO_IP:
-                printf("[>] Protocol: IP\n");
+
+                if(VERBOSE_LEVEL > 0)
+                {
+                    printf("[>] Protocol: IP\n");
+                }
                 stats_pkt_ip++;
                 break;
             default:
@@ -219,8 +238,11 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
             return id;
         }
 
-        printf("[>] Src port: %d\n", ntohs(tcp->th_sport));
-        printf("[>] Dst port: %d\n", ntohs(tcp->th_dport));
+        if(VERBOSE_LEVEL > 0)
+        {
+            printf("[>] Src port: %d\n", ntohs(tcp->th_sport));
+            printf("[>] Dst port: %d\n", ntohs(tcp->th_dport));
+        }
 
         binary_name = net_to_pid_name(
                 strdup(inet_ntoa(ip->ip_src)),
@@ -235,7 +257,10 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
             {
                 new_binary_name = binary_name;
             }
-            printf("[>] Binary: %s\n", new_binary_name);
+            if(VERBOSE_LEVEL > 0)
+            {
+                printf("[>] Binary: %s\n", new_binary_name);
+            }
         } else {
             new_binary_name = malloc(0);
         }
@@ -251,8 +276,10 @@ static u_int32_t process_pkt (struct nfq_data *tb, struct laf_entry *curr_entry)
         size_payload = ntohs(ip->ip_len) - (size_ip + size_tcp);
 
         if (size_payload > 0)
-            printf("[#] Payload %d bytes.\n", size_payload);
-
+            if(VERBOSE_LEVEL > 0)
+            {
+                printf("[#] Payload %d bytes.\n", size_payload);
+            }
     }
 
     return id;
@@ -265,7 +292,11 @@ int check_whitelist(struct laf_entry *entry)
 
     if (entry->ip_src == NULL || entry->ip_dst == NULL)
     {
-        printf("[>] Dropping\n\n");
+
+        if(VERBOSE_LEVEL > 0)
+        {
+            printf("[>] Dropping\n\n");
+        }
         return NF_DROP;
     }
 
@@ -276,13 +307,20 @@ int check_whitelist(struct laf_entry *entry)
                 && (entry->port == allowed[i].port 
                     || allowed[i].port == atoi("*")))
         {
-            printf("[>] Accepting\n\n");
+
+            if(VERBOSE_LEVEL > 0)
+            {
+                printf("[>] Accepting\n\n");
+            }
             stats_pkt_allowed++;
             return NF_ACCEPT;
         }
     }
 
-    printf("[>] Dropping\n\n");
+    if(VERBOSE_LEVEL > 0)
+    {
+        printf("[>] Dropping\n\n");
+    }
     stats_pkt_blocked++;
     return NF_DROP;
 }

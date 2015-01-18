@@ -28,6 +28,7 @@
 #include <assert.h>
 
 #include "procs.h"
+#include "config.h"
 
 static const char *state_name[] = {
 	"UNKNOWN",
@@ -88,7 +89,10 @@ const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint1
     	if(strcmp(local_addr_conversion, ip_src) == 0 && strcmp(rem_addr_conversion, ip_dst) == 0
     		&& local_port == src_port && rem_port == dst_port)
     	{
-			printf("[>] State %s (inode %ld, uid %d)\n", state_name[state], inode, uid);
+            if(VERBOSE_LEVEL > 0)
+            {
+			    printf("[>] State %s (inode %ld, uid %d)\n", state_name[state], inode, uid);
+            }
 			rtn = get_inode_pid_string(inode);
 			break;
     	}
@@ -255,3 +259,5 @@ unsigned long get_inode(char* path)
 	}
 	return -1;
 }
+
+
