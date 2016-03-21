@@ -1,2 +1,2 @@
 all: main.c procs.c
-	gcc -pedantic -Wall -Wextra -Werror -Wformat-security main.c procs.c -o laf -lnfnetlink -lnetfilter_queue
+	gcc -fsanitize=address,undefined -pedantic -Wall -Wextra -Werror -Werror=format-security -Werror=array-bounds -g -Wformat -Wformat-security main.c procs.c -o laf -lnfnetlink -lnetfilter_queue
