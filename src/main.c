@@ -323,7 +323,8 @@ int check_whitelist(struct laf_entry *entry)
     }
 
     /* Handle crazy input.*/
-    printf("\n\n[?] Allow [y/N] ");
+    printf("\n\n[?] %s wants to connect to %s on port %d\n", entry->binary_name, entry->ip_dst, entry->port);
+    printf("[?] Allow [y/N] ");
     scanf("%d", &response);
     /* TODO Check user input!! */
     switch (response) {
