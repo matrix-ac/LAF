@@ -79,9 +79,22 @@ const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint1
     	char *rem_addr_conversion;
 
     	sscanf(line, 
-    		"%d: %64[0-9A-Fa-f]:%X %64[0-9A-Fa-f]:%X %X %lX:%lX %X:%lX %lX %d %d %ld %512s\n", 
-    		&d, local_addr, &local_port, rem_addr, &rem_port, &state, &txq, 
-    		&rxq, &timer_run, &time_len, &retr, &uid, &timeout, &inode, more);
+    		"%d: %64[0-9A-Fa-f]:%X %64[0-9A-Fa-f]:%X %X %lX:%lX %X:%lX %lX %d %d %ld %511s\n", 
+    		&d, 
+    		local_addr, 
+    		&local_port, 
+    		rem_addr, 
+    		&rem_port, 
+    		&state, 
+    		&txq, 
+    		&rxq,
+    		&timer_run, 
+    		&time_len, 
+    		&retr, 
+    		&uid, 
+    		&timeout,
+    		&inode, 
+    		more);
 
     	local_addr_conversion = hex_ip_str(local_addr);
     	rem_addr_conversion   = hex_ip_str(rem_addr);
