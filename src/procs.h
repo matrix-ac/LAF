@@ -15,9 +15,6 @@
     along with Linux Application Firewall (LAF).  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define LINE_BUFFER_SIZE 1024
-#define MAX_PATH_LENGTH  1024
-
 
 /* Takes IP_SRC SRC_PORT, IP_DST DST_PORT and returns a string of the associated binary name with the socket. */
 const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint16_t dst_port);
