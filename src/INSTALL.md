@@ -2,9 +2,13 @@ Install the required dependencies.
 
 	sudo apt-get install libnfnetlink-dev libnetfilter-queue-dev
 
-Compile with make or gcc:
+Compile with make:
 
-	gcc main.c procs.c -o LAF -lnfnetlink -lnetfilter_queue
+	make
+
+Run [clang](http://clang-analyzer.llvm.org/scan-build.html) static analyser: 
+
+        scan-build  make
 
 Create an iptables rule:
 
