@@ -5,12 +5,12 @@ Linux Application Firewall (LAF) is an application firewall for Linux. It allows
 
 ## Alternative to LAF
 - [Subgraph Firwall](https://github.com/subgraph/fw-daemon)(Proc Method)
-- [Douaneapp](http://douaneapp.com/) (Kernel Module)
-- [Lavender Firewall](http://sourceforge.net/projects/lavenderfw) (Proc Method)
-- [Linux Application Firewall](https://github.com/sha0coder/Linux-Application-Firewall) - Development 1 month. (Kernel Module)
+- [OpenSnitch](https://github.com/evilsocket/opensnitch) (Proc Method)
 
 ### Abandoned Projects
-
+- [Douaneapp](http://douaneapp.com/) (Kernel Module)
+- [Linux Application Firewall](https://github.com/sha0coder/Linux-Application-Firewall) (Kernel Module)
+- [Lavender Firewall](http://sourceforge.net/projects/lavenderfw) (Proc Method)
 - [Leopard Flower](http://sourceforge.net/projects/leopardflower/) (Proc Method)
   - [active](https://github.com/andreizilla/leopard-flower-firewall) Fork of Leopard, 14 days activity.
   - [Overwatch](https://github.com/ethanwilloner/Overwatch) Fork of Leopard, Stalled 6 months.
