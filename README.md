@@ -3,6 +3,8 @@ LAF
 
 Linux Application Firewall (LAF) is an application firewall for Linux. It allows users full control over which applications are allowed to communicate over the network.
 
+[![build status](https://gitlab.com/matrix-ac/LAF/badges/master/build.svg)](https://gitlab.com/matrix-ac/LAF/commits/master)
+
 ## Alternative to LAF
 - [Subgraph Firwall](https://github.com/subgraph/fw-daemon)(Proc Method)
 - [OpenSnitch](https://github.com/evilsocket/opensnitch) (Proc Method)
