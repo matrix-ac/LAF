@@ -1,0 +1,13 @@
+image: registry.gitlab.com/matrix-ac/laf/image
+
+test: 
+  script: 
+    - scan-build -o reports make
+  artifacts:
+    paths: 
+    - reports
+    
+build: 
+  script: 
+    - make
+  
