@@ -43,6 +43,11 @@ LAF requires libnetfilter-queue, it's dependency libnfnetlink and a kernel 2.6.1
 
 	sudo apt-get install libnfnetlink-dev libnetfilter-queue-dev
 
+Build using meson
+
+	meson build
+	ninja -C build
+
 ## Help Needed
 
 If you are a C or a Python developer you can help us improve LAF. Feel free to take a look at the bug tracker for some tasks to do.

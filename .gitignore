@@ -1,4 +1,1 @@
-LAF
-laf
-*.o 
-a.out
+build/

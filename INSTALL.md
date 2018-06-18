@@ -1,14 +1,16 @@
 Install the required dependencies.
 
-	sudo apt-get install libnfnetlink-dev libnetfilter-queue-dev
+	sudo apt-get install libnfnetlink-dev libnetfilter-queue-dev 
 
-Compile with make:
+Compile with meson:
 
-	make
+	meson build
+	ninja -C build
 
 Run [clang](http://clang-analyzer.llvm.org/scan-build.html) static analyser: 
 
-        scan-build  make
+	sudo apt install clang-tools # To install clangs scan-build.
+        ninja -C build scan-build  
 
 Create an iptables rule:
 

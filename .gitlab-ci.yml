@@ -2,12 +2,12 @@ image: registry.gitlab.com/matrix-ac/laf/image
 
 test: 
   script: 
-    - scan-build -o reports make
+    - ninja -C build scan-build
   artifacts:
     paths: 
-    - reports
+    - build/meson-logs
     
 build: 
   script: 
-    - make
+    - meson build && ninja -C build 
   
