@@ -8,6 +8,7 @@ RUN set -x \
 	&& apk add --no-cache bash \
 	&& apk add --no-cache gcc \
 	&& apk add --no-cache clang \
+	&& apk add --no-cache clang-analyzer \
 	&& apk add --no-cache meson \
 	&& apk add --no-cache libc-dev \
 	&& apk add --no-cache linux-headers \
