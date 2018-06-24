@@ -1,4 +1,4 @@
-image: registry.gitlab.com/matrix-ac/laf/image
+image: registry.gitlab.com/matrix-ac/laf
 
 test: 
   script: 
