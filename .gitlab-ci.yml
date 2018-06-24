@@ -9,12 +9,12 @@ test:
     
 build-gcc:
   variables:
-    - CC=gcc
+    CC: gcc
   script: 
     - meson build && ninja -C build 
   
 build-clang:
   variables:
-    - CC=clang
+    CC: clang
   script: 
     - meson build && ninja -C build 
