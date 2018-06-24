@@ -7,7 +7,14 @@ test:
     paths: 
     - build/meson-logs
     
-build: 
+build-gcc:
+  variables:
+    CC: gcc
   script: 
     - meson build && ninja -C build 
   
+build-clang:
+  variables:
+    CC: clang
+  script: 
+    - meson build && ninja -C build 
