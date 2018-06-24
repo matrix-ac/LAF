@@ -295,7 +295,8 @@ int check_whitelist(struct laf_entry *entry)
 {
     int i = 0, response = 0;
 
-    if (entry->ip_src == NULL || entry->ip_dst == NULL)
+    // TODO: Proper check of entry.
+    if (entry->ip_src == NULL || entry->ip_dst == NULL || entry->binary_name == NULL)
     {
 
         if(VERBOSE_LEVEL > 0)

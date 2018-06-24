@@ -107,6 +107,8 @@ const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint1
 			    printf("[>] State %s (inode %ld, uid %d)\n", state_name[state], inode, uid);
             }
 			rtn = get_inode_pid_string(inode);
+			free(local_addr_conversion);
+			free(rem_addr_conversion);
 			break;
     	}
 
