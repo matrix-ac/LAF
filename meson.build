@@ -4,14 +4,13 @@ project(
 )
 # TODO: Fix build fail from flag:
 #	'-fsanitize=address,undefined,leak', # undefined access
-#	'-O2', # unused results.
 add_project_arguments([
 	'-D_FORTIFY_SOURCE=2', 
 	'-fasynchronous-unwind-tables',
 	'-fexceptions',
 	'-fpie',
 	'-fpic',
-	'-fsanitize=address,undefined,leak',
+	#'-fsanitize=address,undefined,leak',
 	'-O2', 
 	'-pipe',
 	'-pedantic',

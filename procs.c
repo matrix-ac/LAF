@@ -70,7 +70,10 @@ const char* net_to_pid_name(char* ip_src, uint16_t src_port, char* ip_dst, uint1
 		return rtn;
 	}
 
-	fgets(line,sizeof(line),fp);  /* Skip header line */
+	if(fgets(line,sizeof(line),fp) == NULL) /* Skip header line */
+	{
+		printf("[!!] Unable to readline. (net_to_pid_name)\n");
+	}  
 
 	while(fgets(line,sizeof(line),fp) != NULL) 
 	{
@@ -236,7 +239,7 @@ const char *get_pid_string(char *pid)
 {
 	FILE* fp;
 	char line[LINE_BUFFER_SIZE];
-	const char *rtn = "Unknown PID String";
+	char *rtn = "Unknown PID String";
 
 	char path[MAX_PATH_LENGTH]; 
 	sprintf(path,"/proc/%s/cmdline", pid);
@@ -251,7 +254,7 @@ const char *get_pid_string(char *pid)
 	{		
 		/* sscanf(line, "%[A-Za-z0-9]s", rtn); */
 		/* TODO Reading /proc/PID/cmdline better */
-		rtn = line;
+		strcpy(rtn, line);
 	}
 
 	fclose(fp);

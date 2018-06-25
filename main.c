@@ -326,7 +326,9 @@ int check_whitelist(struct laf_entry *entry)
     /* Handle crazy input.*/
     printf("\n\n[?] %s wants to connect to %s on port %d\n", entry->binary_name, entry->ip_dst, entry->port);
     printf("[?] Allow [y/N] ");
-    scanf("%d", &response);
+    if (scanf("%d", &response) < 0){
+        printf("[!!] Bad input (check_whitelist)\n");
+    }
     /* TODO Check user input!! */
     switch (response) {
         case 'y':
@@ -373,7 +375,11 @@ int add_entry(struct laf_entry *entry) {
 static int cb(struct nfq_q_handle *qh, __attribute__ ((unused)) struct nfgenmsg *nfmsg,
         struct nfq_data *nfa, __attribute__ ((unused)) void *data)
 {
-    struct laf_entry entry = {0}; /* Hack to allow -pedantic to compile */
+    struct laf_entry entry; 
+    entry.ip_src = NULL; 
+    entry.ip_dst = NULL; 
+    entry.binary_name = NULL;
+
     u_int32_t id = process_pkt(nfa, &entry);
     int verdict = check_whitelist(&entry);
     free((char *) entry.binary_name);
