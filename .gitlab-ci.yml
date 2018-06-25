@@ -1,7 +1,8 @@
 image: registry.gitlab.com/matrix-ac/laf
 
 test: 
-  script: 
+  script:
+    - meson build  
     - ninja -C build scan-build
   artifacts:
     paths: 
