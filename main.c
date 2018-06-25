@@ -370,8 +370,8 @@ int add_entry(struct laf_entry *entry) {
 }
 
 /* Callback for the packet */
-static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
-        struct nfq_data *nfa, void *data)
+static int cb(struct nfq_q_handle *qh, __attribute__ ((unused)) struct nfgenmsg *nfmsg,
+        struct nfq_data *nfa, __attribute__ ((unused)) void *data)
 {
     struct laf_entry entry = {0}; /* Hack to allow -pedantic to compile */
     u_int32_t id = process_pkt(nfa, &entry);
@@ -382,7 +382,6 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
 
     stats_pkt_count++;
 
-    data = data; nfmsg = nfmsg; /* Hack to allow -pedantic to compile */
     return nfq_set_verdict(qh, id, verdict, 0, NULL);
 }
 
@@ -410,7 +409,7 @@ static void termination_handler(int signo) {
 }
 
 /* Main entry point to the application */
-int main(int argc, char **argv)
+int main(__attribute__ ((unused)) int argc, __attribute__ ((unused)) char **argv)
 {
     int fd, rv;
     struct sigaction new_action, old_action;
@@ -503,8 +502,6 @@ int main(int argc, char **argv)
     nfq_close(h);
 
     /* TODO Display help options program arguments */
-    argc = argc; argv = argv; /* Hack to allow -pedantic to compile */
-
     exit(0);
 }
 

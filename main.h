@@ -83,8 +83,8 @@ int check_whitelist(struct laf_entry *entry);
 /* Adds an entry to the whitlist */
 int add_entry(struct laf_entry *entry);
 /* Callback for the packet */
-static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
-        struct nfq_data *nfa, void *data);
+static int cb(struct nfq_q_handle *qh, __attribute__ ((unused)) struct nfgenmsg *nfmsg,
+        struct nfq_data *nfa, __attribute__ ((unused)) void *data);
 static void termination_handler(int signo);
 
 /* Takes IP_SRC SRC_PORT, IP_DST DST_PORT and returns a string of the associated binary name with the socket. */
